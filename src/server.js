@@ -51,7 +51,6 @@ const startServer = async () => {
         await sequelize.sync({ alter: true });
         console.log('Database synced');
 
-        // We removed the !process.env.VERCEL check so it will ALWAYS start the listener for Render
         app.listen(PORT, () => {
             console.log(`Server is running on port http://localhost:${PORT}`);
         });
@@ -62,5 +61,4 @@ const startServer = async () => {
 
 startServer();
 
-// Still exporting for Vercel, just in case
 export default app;
