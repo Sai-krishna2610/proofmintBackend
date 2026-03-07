@@ -1,6 +1,9 @@
 import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
-import pg from 'pg';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const pg = require('pg');
 
 dotenv.config();
 
