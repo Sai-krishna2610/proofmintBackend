@@ -51,12 +51,10 @@ const startServer = async () => {
         await sequelize.sync({ alter: true });
         console.log('Database synced');
 
-        // Only start the listener if we are not running this module as a dependency/serverless function
-        if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
-            app.listen(PORT, () => {
-                console.log(`Server is running on port http://localhost:${PORT}`);
-            });
-        }
+        // We removed the !process.env.VERCEL check so it will ALWAYS start the listener for Render
+        app.listen(PORT, () => {
+            console.log(`Server is running on port http://localhost:${PORT}`);
+        });
     } catch (error) {
         console.log('Database connection failed', error);
     }
@@ -64,5 +62,5 @@ const startServer = async () => {
 
 startServer();
 
-// For Vercel Serverless Functions
+// Still exporting for Vercel, just in case
 export default app;
