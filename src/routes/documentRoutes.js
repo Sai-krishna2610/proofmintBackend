@@ -197,6 +197,26 @@ router.get('/:id/preview', async (req, res, next) => {
     } catch (err) { next(err); }
 });
 
+// POST /documents/:id/revoke - Revoke a document
+router.post('/:id/revoke', authorize('admin', 'issuer'), async (req, res, next) => {
+    try {
+        const doc = await Document.findByPk(req.params.id);
+        if (!doc) return res.status(404).json({ message: 'Document not found' });
+
+        if (req.user.role === 'issuer' && doc.issuer_user_id !== req.user.id) {
+            return res.status(403).json({ message: 'Access denied' });
+        }
+
+        const { reason } = req.body;
+        doc.status = 'revoked';
+        doc.revoke_reason = reason;
+        await doc.save();
+
+        logAction(req.user.id, doc.id, 'revoke');
+        res.json({ message: 'Document revoked successfully', doc });
+    } catch (err) { next(err); }
+});
+
 // POST /documents/:id/issue - Finalize and Issue
 router.post('/:id/issue', authorize('admin', 'issuer'), async (req, res, next) => {
     try {

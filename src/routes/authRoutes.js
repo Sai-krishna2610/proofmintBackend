@@ -32,7 +32,7 @@ router.post('/register', async (req, res, next) => {
         if (error) return res.status(400).json({ message: error.details[0].message});
 
         const existing = await User.findOne({ where: { email: value.email } });
-        if (existing) return res.status(409).json({ message: `Email already registered with this email id: ${value.email} ${error}`});
+        if (existing) return res.status(409).json({ message: `Email already registered with this email id: ${value.email}`});
 
         const password_hash = await bcrypt.hash(value.password, 12);
         // console.log(`Values of Users : ${JSON.stringify(value)}`);
