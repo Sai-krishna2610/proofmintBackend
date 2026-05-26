@@ -26,30 +26,32 @@ const loginSchema = Joi.object({
 router.post('/register', async (req, res, next) => {
     try {
         const { error, value } = registerSchema.validate(req.body);
-        if(error){
-            console.log(`Error Occurred while Registering ${error}`);
-        }
-        if (error) return res.status(400).json({ message: error.details[0].message});
+        if (error) return res.status(400).json({ message: error.details[0].message });
 
-        const existing = await User.findOne({ where: { email: value.email } });
-        if (existing) return res.status(409).json({ message: `Email already registered with this email id: ${value.email}`});
+        const emailLower = value.email.toLowerCase();
+        const existing = await User.findOne({ where: { email: emailLower } });
+        if (existing) return res.status(409).json({ message: `Email already registered with this email id: ${value.email}` });
 
         const password_hash = await bcrypt.hash(value.password, 12);
-        // console.log(`Values of Users : ${JSON.stringify(value)}`);
-        const user = await User.create({ ...value, password_hash });
+        const user = await User.create({ ...value, email: emailLower, password_hash });
 
         logAction(user.id, null, 'register', { email: user.email });
         res.status(201).json({ accessToken: generateAccessToken(user), refreshToken: generateRefreshToken(user), user: { id: user.id, email: user.email, name: user.name, role: user.role } });
-    } catch (err) { next(err); }
+    } catch (err) {
+        if (err.name === 'SequelizeUniqueConstraintError' || err.name === 'SequelizeValidationError') {
+            return res.status(409).json({ message: 'Email already registered' });
+        }
+        next(err);
+    }
 });
 
 router.post('/login', async (req, res, next) => {
     try {
         const { error, value } = loginSchema.validate(req.body);
-        console.log(`Error Occurred while Login ${error}`);
         if (error) return res.status(400).json({ message: error.details[0].message });
 
-        const user = await User.findOne({ where: { email: value.email } });
+        const emailLower = value.email.toLowerCase();
+        const user = await User.findOne({ where: { email: emailLower } });
         if (!user || !(await bcrypt.compare(value.password, user.password_hash))) {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
