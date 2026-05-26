@@ -27,8 +27,13 @@ app.get('/health', (req, res) => {
 import verifyRoutes from './routes/verifyRoutes.js';
 
 app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/documents', documentRoutes);
+app.use('/api/documents', documentRoutes);
 app.use('/verify', verifyRoutes);
+app.use('/api/verify', verifyRoutes);
+app.use('/v', verifyRoutes);
+app.use('/api/v', verifyRoutes);
 app.use((err, req, res, next) => {
     console.error('[ERROR]', err.message || err);
     console.error(err.stack);
@@ -48,7 +53,7 @@ const startServer = async () => {
     try {
         await sequelize.authenticate();
         console.log('Database connected');
-        await sequelize.sync({ alter: true });
+        await sequelize.sync();
         console.log('Database synced');
 
         app.listen(PORT, () => {

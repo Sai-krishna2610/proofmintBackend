@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { Document, DocumentFile, User } from '../models/index.js';
+import { Document, DocumentFile, User, Verification } from '../models/index.js';
 
 const router = Router();
 
@@ -32,6 +32,15 @@ router.post('/', async (req, res, next) => {
         });
 
         if (!doc) {
+            // Log verification attempt (invalid)
+            await Verification.create({
+                document_id: null,
+                query_value: docId,
+                result: 'invalid',
+                client_ip: req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+                user_agent: req.headers['user-agent'] || 'unknown'
+            }).catch(err => console.error('[VERIFICATION_LOG_ERROR]', err));
+
             return res.status(404).json({
                 result: 'invalid',
                 message: 'Document not found',
@@ -50,6 +59,17 @@ router.post('/', async (req, res, next) => {
         } else {
             result = 'draft';
         }
+
+        const loggedResult = ['valid', 'expired', 'revoked'].includes(result) ? result : 'invalid';
+        
+        // Log verification attempt
+        await Verification.create({
+            document_id: doc.id,
+            query_value: docId,
+            result: loggedResult,
+            client_ip: req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+            user_agent: req.headers['user-agent'] || 'unknown'
+        }).catch(err => console.error('[VERIFICATION_LOG_ERROR]', err));
 
         res.json({
             result,
@@ -79,6 +99,15 @@ router.get('/:id', async (req, res, next) => {
         });
 
         if (!doc) {
+            // Log verification attempt (invalid)
+            await Verification.create({
+                document_id: null,
+                query_value: req.params.id,
+                result: 'invalid',
+                client_ip: req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+                user_agent: req.headers['user-agent'] || 'unknown'
+            }).catch(err => console.error('[VERIFICATION_LOG_ERROR]', err));
+
             return res.status(404).json({ result: 'invalid', message: 'Document not found' });
         }
 
@@ -88,6 +117,17 @@ router.get('/:id', async (req, res, next) => {
         } else if (doc.status === 'revoked') {
             result = 'revoked';
         }
+
+        const loggedResult = ['valid', 'expired', 'revoked'].includes(result) ? result : 'invalid';
+
+        // Log verification attempt
+        await Verification.create({
+            document_id: doc.id,
+            query_value: req.params.id,
+            result: loggedResult,
+            client_ip: req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+            user_agent: req.headers['user-agent'] || 'unknown'
+        }).catch(err => console.error('[VERIFICATION_LOG_ERROR]', err));
 
         res.json({
             result,

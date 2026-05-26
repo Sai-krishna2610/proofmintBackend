@@ -59,4 +59,40 @@ router.post('/login', async (req, res, next) => {
     } catch (err) { next(err); }
 });
 
+router.post('/refresh', async (req, res, next) => {
+    try {
+        const { refreshToken } = req.body;
+        if (!refreshToken) {
+            return res.status(400).json({ message: 'Refresh token is required' });
+        }
+
+        const decoded = jwt.verify(refreshToken, config.jwt.refreshSecret);
+        const user = await User.findByPk(decoded.id);
+
+        if (!user || !user.is_active) {
+            return res.status(401).json({ message: 'User not found or deactivated' });
+        }
+
+        const newAccessToken = generateAccessToken(user);
+        const newRefreshToken = generateRefreshToken(user);
+
+        res.json({
+            accessToken: newAccessToken,
+            refreshToken: newRefreshToken,
+        });
+    } catch (err) {
+        return res.status(401).json({ message: 'Invalid or expired refresh token' });
+    }
+});
+
+router.post('/logout', async (req, res, next) => {
+    try {
+        // Express standard stateless JWT logout just returns success,
+        // as the frontend is responsible for clearing the tokens.
+        res.json({ message: 'Successfully logged out' });
+    } catch (err) {
+        next(err);
+    }
+});
+
 export default router;
